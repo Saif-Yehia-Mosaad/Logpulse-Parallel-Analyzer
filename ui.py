@@ -5,15 +5,15 @@ import threading
 import sequential
 import parallel
 
-BG     = "#0d0d0d"
-PANEL  = "#111111"
-CARD   = "#1a1a1a"
-BORDER = "#2a2a2a"
-TEXT   = "#ffffff"
-MUTED  = "#888888"
-GREEN  = "#00ff9c"
-RED    = "#ff4444"
-ACCENT = "#ffffff"
+BG     = "#f5f5dc"
+PANEL  = "#f0ead6"
+CARD   = "#ffffff"
+BORDER = "#d6d6c2"
+TEXT   = "#2f4f4f"
+MUTED  = "#7a7a6a"
+GREEN  = "#2ecc71"
+RED    = "#e74c3c"
+ACCENT = "#27ae60"
 
 
 class Dashboard:
@@ -65,8 +65,8 @@ class Dashboard:
         # Start Analysis button (right)
         self.start_btn = tk.Button(
             bar, text="Start Analysis",
-            bg=ACCENT, fg="#000000",
-            relief="flat", activebackground="#cccccc",
+            bg=ACCENT, fg="white",
+            relief="flat", activebackground="#219150",
             font=("Segoe UI", 10, "bold"),
             padx=16, pady=4, cursor="hand2",
             command=self._start
@@ -110,16 +110,15 @@ class Dashboard:
         container = tk.Frame(self.root, bg=BG)
         container.pack(fill="both", expand=True, padx=10)
 
-        # خلي الأعمدة تتمدد بالتساوي
         container.columnconfigure(0, weight=1)
         container.columnconfigure(1, weight=1)
         container.rowconfigure(0, weight=1)
 
         self.seq_panel = self._make_panel(container, "Sequential System Results")
-        self.seq_panel["frame"].grid(row=0, column=0, sticky="nsew", padx=(0, 5))
+        self.seq_panel["frame"].grid(row=0, column=0, sticky="nsew", padx=(0, 5), pady=5)
 
         self.par_panel = self._make_panel(container, "Parallel System Results")
-        self.par_panel["frame"].grid(row=0, column=1, sticky="nsew", padx=(5, 0))
+        self.par_panel["frame"].grid(row=0, column=1, sticky="nsew", padx=(5, 0), pady=5)
 
     def _make_panel(self, parent, title):
         outer = tk.Frame(parent, bg=BORDER, bd=1)
@@ -127,13 +126,18 @@ class Dashboard:
         inner = tk.Frame(outer, bg=PANEL)
         inner.pack(fill="both", expand=True, padx=1, pady=1)
 
+        # Grid system محترم
+        inner.grid_columnconfigure(0, weight=1)
+        inner.grid_columnconfigure(1, weight=1)
+        inner.grid_rowconfigure(2, weight=1)
+
         # Title
         tk.Label(
             inner, text=title,
             bg=PANEL, fg=TEXT,
             font=("Segoe UI", 11, "bold"),
             anchor="w"
-        ).pack(fill="x", padx=14, pady=(10, 4))
+        ).grid(row=0, column=0, columnspan=2, sticky="w", padx=14, pady=(10, 4))
 
         # Progress bar
         style_name = f"p{id(outer)}.Horizontal.TProgressbar"
@@ -141,48 +145,51 @@ class Dashboard:
         style.theme_use("clam")
         style.configure(
             style_name,
-            troughcolor=CARD,
+            troughcolor="#eae7d6",
             background=GREEN,
-            thickness=6
+            thickness=8
         )
+
         pbar = ttk.Progressbar(
             inner, style=style_name,
             orient="horizontal", mode="determinate", maximum=100
         )
-        pbar.pack(fill="x", padx=14, pady=(0, 10))
+        pbar.grid(row=1, column=0, columnspan=2, sticky="ew", padx=14, pady=(0, 10))
 
-        # Time + Errors row
-        metrics_row = tk.Frame(inner, bg=PANEL)
-        metrics_row.pack(fill="x", padx=14, pady=(0, 10))
+        # Cards
+        time_card = self._metric_card(inner, "Total Time", "0.00 sec", GREEN)
+        time_card["frame"].grid(row=2, column=0, sticky="nsew", padx=8, pady=6)
 
-        time_card  = self._metric_card(metrics_row, "Total Time",   "0.00 sec", GREEN)
-        time_card["frame"].pack(side="left", fill="both", expand=True, padx=(0, 6))
+        err_card = self._metric_card(inner, "Total Errors", "0", RED)
+        err_card["frame"].grid(row=2, column=1, sticky="nsew", padx=8, pady=6)
 
-        err_card   = self._metric_card(metrics_row, "Total Errors", "0",        RED)
-        err_card["frame"].pack(side="left", fill="both", expand=True)
+        # Text boxes
+        common_frame = self._text_box(inner, "Most Common Errors")
+        common_frame["frame"].grid(row=3, column=0, sticky="nsew", padx=8, pady=6)
 
-        # Common + Freq row
-        boxes_row = tk.Frame(inner, bg=PANEL)
-        boxes_row.pack(fill="both", expand=True, padx=14, pady=(0, 12))
+        freq_frame = self._text_box(inner, "Errors Per Minute")
+        freq_frame["frame"].grid(row=3, column=1, sticky="nsew", padx=8, pady=6)
 
-        common_frame = self._text_box(boxes_row, "Most Common Errors")
-        common_frame["frame"].pack(side="left", fill="both", expand=True, padx=(0, 6))
-
-        freq_frame = self._text_box(boxes_row, "Errors Per Minute")
-        freq_frame["frame"].pack(side="left", fill="both", expand=True)
+        inner.grid_rowconfigure(3, weight=1)
 
         return {
-            "frame":   outer,
-            "pbar":    pbar,
-            "time":    time_card["value"],
-            "errors":  err_card["value"],
-            "common":  common_frame["text"],
-            "freq":    freq_frame["text"],
+            "frame": outer,
+            "pbar": pbar,
+            "time": time_card["value"],
+            "errors": err_card["value"],
+            "common": common_frame["text"],
+            "freq": freq_frame["text"],
         }
 
     def _metric_card(self, parent, label, default, color):
-        card = tk.Frame(parent, bg=CARD, bd=1, relief="flat",
-                        highlightbackground=BORDER, highlightthickness=1)
+        card = tk.Frame(
+            parent,
+            bg=CARD,
+            bd=1,
+            relief="solid",
+            highlightbackground=BORDER,
+            highlightthickness=1
+        )
 
         tk.Label(
             card, text=label,
@@ -194,7 +201,7 @@ class Dashboard:
         val = tk.Label(
             card, text=default,
             bg=CARD, fg=color,
-            font=("Segoe UI", 22, "bold"),
+            font=("Segoe UI", 24, "bold"),
             anchor="w"
         )
         val.pack(fill="x", padx=10, pady=(2, 10))
@@ -214,7 +221,7 @@ class Dashboard:
 
         txt = tk.Text(
             frame,
-            bg="#0a0a0a", fg="#cccccc",
+            bg="#ffffff", fg="#3a5a40",
             font=("Consolas", 8),
             relief="flat", bd=0,
             selectbackground=BORDER,
